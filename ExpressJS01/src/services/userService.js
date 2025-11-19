@@ -1,97 +1,114 @@
 require("dotenv").config();
-const User = require("../models/user"); // Import model Sequelize (từ Bước 7)
+const { User, Role } = require("../models/index");
 const bcrypt = require('bcrypt');
 const jwt = require("jsonwebtoken");
 
 const saltRounds = 10;
 
 const createUserService = async (name, email, password) => {
-  try {
-    //check user exist
-    const user = await User.findOne({ where: { email: email } }); 
-    if (user) {
-      console.log(`>>> user exist, chọn 1 email khác: ${email}`);
-      return null;
+    try {
+        // 1. Check user exist
+        const user = await User.findOne({ where: { email: email } });
+        if (user) {
+            console.log(`>>> user exist, chọn 1 email khác: ${email}`);
+            return null;
+        }
+
+        // 2. Hash password
+        const hashPassword = await bcrypt.hash(password, saltRounds);
+
+        // 3. Tìm Role mặc định là "User" trong database
+        // (Đảm bảo bạn đã chạy server để hàm seedRoles tạo dữ liệu mẫu rồi nhé)
+        const userRole = await Role.findOne({ where: { description: 'User' } });
+
+        // 4. Save user to database
+        let result = await User.create({
+            name: name,
+            email: email,
+            password: hashPassword,
+            // Gán khóa ngoại RoleId thay vì lưu string "User"
+            RoleId: userRole ? userRole.id : null 
+        });
+        
+        return result;
+
+    } catch (error) {
+        console.log(error);
+        return null;
     }
-
-    //hash user password
-    const hashPassword = await bcrypt.hash(password, saltRounds)
-    
-    //save user to database
-    let result = await User.create({
-      name: name,
-      email: email,
-      password: hashPassword,
-      role: "User"
-    })
-    return result;
-
-  } catch (error) {
-    console.log(error);
-    return null;
-  }
 }
 
-const loginService = async (emaill, password) => {
-  try {
-    //fetch user by email
-    const user = await User.findOne({ where: { email: emaill } });
+const loginService = async (email, password) => {
+    try {
+        // 1. Fetch user by email và lấy kèm thông tin Role
+        const user = await User.findOne({ 
+            where: { email: email },
+            include: { model: Role } // Eager loading: Join bảng Role
+        });
 
-    if (user) {
-      //compare password
-      const isMatchPassword = await bcrypt.compare(password, user.password);
-      if (!isMatchPassword) {
-        return {
-          EC: 2,
-          EM: "Email/Password không hợp lệ"
+        if (user) {
+            // 2. Compare password
+            const isMatchPassword = await bcrypt.compare(password, user.password);
+            if (!isMatchPassword) {
+                return {
+                    EC: 2,
+                    EM: "Email/Password không hợp lệ"
+                }
+            } else {
+                // 3. Create access token
+                // Lấy role từ bảng Role (user.Role.description) 
+                // Nếu user chưa có role thì mặc định là 'User' để không lỗi
+                const roleName = user.Role ? user.Role.description : 'User';
+
+                const payload = {
+                    email: user.email,
+                    name: user.name,
+                    role: roleName // Lưu chuỗi "Admin" hoặc "User" vào token
+                }
+                
+                const access_token = jwt.sign(
+                    payload,
+                    process.env.JWT_SECRET,
+                    {
+                        expiresIn: process.env.JWT_EXPIRE
+                    }
+                )
+                return {
+                    EC: 0,
+                    access_token,
+                    user: {
+                        email: user.email,
+                        name: user.name,
+                        role: roleName
+                    }
+                };
+            }
+        } else {
+            return {
+                EC: 1,
+                EM: "Email/Password không hợp lệ"
+            }
         }
-      } else {
-        //create an access token
-        const payload = {
-          email: user.email,
-          name: user.name
-        }
-        const access_token = jwt.sign(
-          payload,
-          process.env.JWT_SECRET,
-          {
-            expiresIn: process.env.JWT_EXPIRE
-          }
-        )
-        return {
-          EC: 0,
-          access_token,
-          user: {
-            email: user.email,
-            name: user.name
-          }
-        };
-      }
-    } else {
-      return {
-        EC: 1,
-        EM: "Email/Password không hợp lệ"
-      }
+    } catch (error) {
+        console.log(error);
+        return null;
     }
-  } catch (error) {
-    console.log(error);
-    return null;
-  }
 }
 
 const getUserService = async () => {
-  try {
-    // `attributes: { exclude: ['password'] }` để không lấy cột password
-    let result = await User.findAll({
-      attributes: { exclude: ['password'] }
-    }); 
-    return result;
-  } catch (error) {
-    console.log(error);
-    return null;
-  }
+    try {
+        // Lấy danh sách user kèm theo Role của họ để hiển thị
+        let result = await User.findAll({
+            attributes: { exclude: ['password'] },
+            include: { model: Role } 
+        });
+        return result;
+    } catch (error) {
+        console.log(error);
+        return null;
+    }
 }
 
 module.exports = {
-  createUserService, loginService, getUserService
+    createUserService, loginService, getUserService
 }

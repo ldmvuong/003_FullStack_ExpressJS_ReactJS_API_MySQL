@@ -3,7 +3,7 @@ require('dotenv').config();
 const express = require('express'); //commonjs
 const configViewEngine = require('./config/viewEngine');
 const apiRoutes = require('./routes/api');
-const { connection } = require('./config/database');
+const { initDatabase } = require('./models/index'); // Thêm dòng này
 const cors = require('cors');
 // 1. Import thư viện rate-limit
 const rateLimit = require('express-rate-limit');
@@ -40,7 +40,7 @@ app.use('/v1/api/', apiRoutes);
 (async () => {
   try {
     //kết nối database using sequelize
-    await connection(); // Gọi hàm connection đã import
+    await initDatabase();
     //lắng nghe port trong env
     app.listen(port, () => {
       console.log(`Backend Nodejs App listening on port ${port}`)

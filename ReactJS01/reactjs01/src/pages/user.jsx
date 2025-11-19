@@ -35,7 +35,9 @@ const UserPage = () => {
     },
     {
       title: 'Role',
-      dataIndex: 'role',
+      render: (text, record) => {
+        return record.Role ? record.Role.description : "N/A"; 
+      }
     },
   ];
   return (

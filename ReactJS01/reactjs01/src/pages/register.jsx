@@ -10,7 +10,7 @@ const RegisterPage = () => {
   const onFinish = async (values) => {
     const { name, email, password } = values;
     const res = await createUserApi(name, email, password);
-    if (res && res._id) {
+    if (res && res.id) {
       notification.success({
         message: "CREATE USER",
         description: "Success"
@@ -43,10 +43,16 @@ const RegisterPage = () => {
             <Form.Item
               label="Email"
               name="email"
-              rules={[{
-                required: true,
-                message: 'Please input your email!',
-              },]}
+              rules={[
+                { 
+                  required: true, 
+                  message: 'Vui lòng nhập email!' 
+                },
+                { 
+                  type: 'email', 
+                  message: 'Email không hợp lệ!'
+                }
+              ]}
             >
               <Input />
             </Form.Item>
@@ -54,10 +60,16 @@ const RegisterPage = () => {
             <Form.Item
               label="Password"
               name="password"
-              rules={[{
-                required: true,
-                message: 'Please input your password!',
-              },]}
+              rules={[
+                { 
+                  required: true, 
+                  message: 'Vui lòng nhập mật khẩu!' 
+                },
+                { 
+                  min: 6, 
+                  message: 'Mật khẩu tối thiểu 6 ký tự'
+                }
+              ]}
             >
               <Input.Password />
             </Form.Item>

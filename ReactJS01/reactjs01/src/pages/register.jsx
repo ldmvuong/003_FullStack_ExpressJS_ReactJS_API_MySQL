@@ -10,7 +10,7 @@ const RegisterPage = () => {
   const onFinish = async (values) => {
     const { name, email, password } = values;
     const res = await createUserApi(name, email, password);
-    if (res && res._id) { // Thay `res` bằng `res && res._id` (hoặc `res.id`)
+    if (res && res._id) {
       notification.success({
         message: "CREATE USER",
         description: "Success"
@@ -19,7 +19,7 @@ const RegisterPage = () => {
     } else {
       notification.error({
         message: "CREATE USER",
-        description: res?.message ?? "error" // Cải thiện thông báo lỗi
+        description: res?.message ?? "error"
       })
     }
   };

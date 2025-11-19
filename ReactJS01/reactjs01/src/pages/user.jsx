@@ -43,7 +43,7 @@ const UserPage = () => {
       <Table
         bordered
         dataSource={dataSource} columns={columns}
-        rowKey={"_id"} // Tương tự như trên, dùng `_id` hoặc `id`
+        rowKey={"_id"}
       />
     </div>
   )

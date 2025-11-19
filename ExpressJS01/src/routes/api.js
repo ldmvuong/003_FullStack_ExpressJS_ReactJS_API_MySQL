@@ -1,5 +1,6 @@
 const express = require('express');
 const { createUser, handleLogin, getUser, getAccount } = require('../controllers/userController');
+const { getProducts } = require('../controllers/productController');
 const auth = require('../middleware/auth');
 const delay = require('../middleware/delay');
 const { checkAdmin } = require('../middleware/role');
@@ -22,5 +23,7 @@ routerAPI.post("/login", loginRules, validate, handleLogin);
 // Thứ tự: Auth (giải mã token) -> CheckAdmin (kiểm tra role) -> Controller
 routerAPI.get("/user", checkAdmin, getUser);
 routerAPI.get("/account", delay, getAccount);
+
+routerAPI.get("/products", getProducts);
 
 module.exports = routerAPI;

@@ -1,97 +1,168 @@
 import React, { useEffect, useState } from 'react';
 import { getProductApi } from '../util/api';
-import { Card, Col, Row, Spin, Button, notification } from 'antd';
+import { Card, Col, Row, Button, Input, Select, Spin, Tag, notification } from 'antd';
 
 const { Meta } = Card;
+const { Search } = Input;
+const { Option } = Select;
 
 const ProductPage = () => {
     const [listProduct, setListProduct] = useState([]);
-    const [current, setCurrent] = useState(1);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(false);
     
-    // Số lượng sản phẩm lấy mỗi lần (tùy chỉnh)
-    const limit = 6; 
+    // State Filter
+    const [filter, setFilter] = useState({
+        page: 1,
+        limit: 8,
+        keyword: '',
+        sort: 'createdAt-desc',
+        category: [], 
+        ram: [],      
+        priceRange: null 
+    });
 
-    // Hàm gọi API
-    const loadProduct = async (page) => {
+    // Gọi API
+    const fetchProducts = async (currentFilter) => {
         setLoading(true);
-        const res = await getProductApi(page, limit);
         
-        if (res && res.products) {
-            // Logic Lazy Loading: Nối dữ liệu cũ + dữ liệu mới
-            setListProduct(prev => [...prev, ...res.products]);
-            setTotal(res.totalRows);
-        } else {
-             notification.error({
-                message: "Lỗi tải dữ liệu",
-                description: "Không thể lấy danh sách sản phẩm"
-            })
+        // Chuyển đổi mảng thành chuỗi cách nhau dấu phẩy trước khi gửi
+        const params = {
+            ...currentFilter,
+            category: currentFilter.category ? currentFilter.category.join(',') : '', 
+            ram: currentFilter.ram ? currentFilter.ram.join(',') : ''
+        };
+
+        try {
+            const res = await getProductApi(params);
+            if (res && res.products) {
+                if (currentFilter.page === 1) {
+                    setListProduct(res.products);
+                } else {
+                    setListProduct(prev => [...prev, ...res.products]);
+                }
+                setTotal(res.totalRows);
+            }
+        } catch (error) {
+            notification.error({ message: "Lỗi tải dữ liệu" });
         }
         setLoading(false);
     }
 
-    // Chạy lần đầu khi vào trang (Load trang 1)
+    // Effect: Khi filter thay đổi -> Gọi lại API
     useEffect(() => {
-        loadProduct(1);
-    }, []);
+        // 1. Khi filter thay đổi, luôn reset về trang 1
+        const newFilter = { ...filter, page: 1 };
+        
+        // 2. Cập nhật lại state filter để biến page về 1
+        setFilter(newFilter);
+        
+        // 3. Gọi API lấy dữ liệu trang 1
+        fetchProducts(newFilter);
+        
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filter.keyword, filter.sort, filter.category, filter.ram]); 
 
-    // Xử lý khi bấm nút "Xem thêm"
+    // Các hàm xử lý sự kiện load more
     const handleLoadMore = () => {
-        const nextPage = current + 1;
-        loadProduct(nextPage);
-        setCurrent(nextPage);
+        const nextPage = filter.page + 1;
+        const newFilter = { ...filter, page: nextPage };
+        
+        setFilter(newFilter); // Cập nhật state lên trang tiếp theo
+        fetchProducts(newFilter); // Gọi API trang tiếp theo
     }
 
     return (
         <div style={{ padding: 20 }}>
-            <h2 style={{ textAlign: 'center', marginBottom: 20 }}>DANH SÁCH SẢN PHẨM</h2>
-            
-            {/* Hiển thị danh sách dạng lưới */}
-            <Row gutter={[20, 20]}>
+            <h2 style={{ textAlign: 'center' }}>CỬA HÀNG ĐIỆN THOẠI</h2>
+
+            {/* --- THANH CÔNG CỤ TÌM KIẾM & LỌC --- */}
+            <div style={{ 
+                background: '#f5f5f5', padding: 20, borderRadius: 8, marginBottom: 20,
+                display: 'flex', gap: 15, flexWrap: 'wrap', justifyContent: 'center'
+            }}>
+                
+                <Search
+                    placeholder="Tìm tên máy..."
+                    onSearch={(val) => setFilter({ ...filter, keyword: val })}
+                    style={{ width: 250 }}
+                    allowClear
+                    enterButton
+                />
+
+                <Select
+                    mode="multiple"
+                    allowClear
+                    style={{ width: 250 }}
+                    placeholder="Chọn Hãng"
+                    value={filter.category}
+                    onChange={(val) => setFilter({ ...filter, category: val })}
+                    maxTagCount="responsive"
+                >
+                    <Option value="Apple">Apple</Option>
+                    <Option value="Samsung">Samsung</Option>
+                    <Option value="Xiaomi">Xiaomi</Option>
+                    <Option value="Oppo">Oppo</Option>
+                </Select>
+
+                <Select
+                    mode="multiple"
+                    allowClear
+                    style={{ width: 200 }}
+                    placeholder="Chọn RAM"
+                    value={filter.ram}
+                    onChange={(val) => setFilter({ ...filter, ram: val })}
+                >
+                    <Option value="4GB">4GB</Option>
+                    <Option value="8GB">8GB</Option>
+                    <Option value="12GB">12GB</Option>
+                    <Option value="16GB">16GB</Option>
+                </Select>
+
+                <Select 
+                    defaultValue="createdAt-desc" 
+                    style={{ width: 180 }} 
+                    onChange={(val) => setFilter({ ...filter, sort: val })}
+                >
+                    <Option value="createdAt-desc">Mới nhất</Option>
+                    <Option value="price-asc">Giá tăng dần</Option>
+                    <Option value="price-desc">Giá giảm dần</Option>
+                    <Option value="sold-desc">Bán chạy nhất</Option>
+                </Select>
+            </div>
+
+            {/* --- DANH SÁCH SẢN PHẨM --- */}
+            <Row gutter={[16, 16]}>
                 {listProduct.map((item) => (
-                    // Responsive: Mobile 1 cột, Tablet 2 cột, Desktop 4 cột
                     <Col xs={24} sm={12} md={8} lg={6} key={item.id}>
                         <Card
                             hoverable
-                            cover={
-                                <img 
-                                    alt={item.name} 
-                                    src={item.image} 
-                                    style={{ height: 250, objectFit: 'cover', padding: 10 }}
-                                />
-                            }
+                            cover={<img alt={item.name} src={item.image} style={{ height: 220, objectFit: 'contain', padding: 10 }} />}
                         >
                             <Meta 
                                 title={item.name} 
                                 description={
-                                    <span style={{ color: 'red', fontWeight: 'bold' }}>
-                                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price)}
-                                    </span>
+                                    <div>
+                                        <div style={{ color: 'red', fontWeight: 'bold', fontSize: 16 }}>
+                                            {item.price.toLocaleString()} đ
+                                        </div>
+                                        <div style={{ marginTop: 5 }}>
+                                            <Tag color="blue">{item.ram}</Tag>
+                                            <Tag color="cyan">{item.rom}</Tag>
+                                        </div>
+                                    </div>
                                 } 
                             />
-                            <div style={{ marginTop: 10, color: '#888' }}>
-                                {item.description.substring(0, 50)}...
-                            </div>
                         </Card>
                     </Col>
                 ))}
             </Row>
-            
-            {/* Khu vực nút bấm tải thêm */}
-            <div style={{ textAlign: 'center', marginTop: 30, marginBottom: 50 }}>
-                {loading && <Spin tip="Đang tải..." />}
-                
-                {/* Chỉ hiện nút nếu chưa tải hết và không đang loading */}
-                {!loading && listProduct.length < total && (
-                    <Button type="primary" size="large" onClick={handleLoadMore}>
-                        Xem thêm sản phẩm ({total - listProduct.length} còn lại)
-                    </Button>
-                )}
 
-                {/* Thông báo khi đã hết hàng */}
-                {listProduct.length >= total && listProduct.length > 0 && (
-                    <div style={{ color: 'green', fontWeight: 'bold' }}>🎉 Bạn đã xem hết sản phẩm!</div>
+             {/* Nút Xem Thêm */}
+             <div style={{ textAlign: 'center', marginTop: 30 }}>
+                {loading && <Spin />}
+                {!loading && listProduct.length < total && (
+                    <Button onClick={handleLoadMore}>Xem thêm ({total - listProduct.length})</Button>
                 )}
             </div>
         </div>

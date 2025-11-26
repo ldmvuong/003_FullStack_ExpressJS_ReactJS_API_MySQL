@@ -21,9 +21,13 @@ const getUserApi = () => {
   return axios.get(URL_API)
 }
 
-const getProductApi = (page, limit) => {
-    const URL_API = `/v1/api/products?page=${page}&limit=${limit}`;
-    return axios.get(URL_API);
+const getProductApi = (params) => {
+    const URL_API = '/v1/api/products';
+    // Truyền params vào config của axios
+    // Axios sẽ tự động chuyển object params thành: ?page=1&limit=10&keyword=Samsung...
+    return axios.get(URL_API, {
+        params: params
+    });
 }
 
 export {

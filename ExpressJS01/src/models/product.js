@@ -11,13 +11,39 @@ const Product = sequelize.define('Product', {
         allowNull: false,
         defaultValue: 0
     },
+    discount: { // Phần trăm giảm giá (VD: 10%)
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
+    stock: { // Số lượng trong kho
+        type: DataTypes.INTEGER,
+        defaultValue: 100
+    },
+    sold: { // Số lượng đã bán (để sort theo 'bán chạy')
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
     image: {
         type: DataTypes.TEXT,
-        defaultValue: "https://cdn2.cellphones.com.vn/insecure/rs:fill:358:358/q:90/plain/https://cellphones.com.vn/media/catalog/product/s/a/samsung-galaxy-z-flip-7-1.jpg"
+        defaultValue: "https://via.placeholder.com/150"
+    },
+    // --- CẤU HÌNH CHI TIẾT ĐIỆN THOẠI ---
+    ram: { // VD: "8GB", "12GB"
+        type: DataTypes.STRING, 
+    },
+    rom: { // Bộ nhớ trong: "128GB", "256GB"
+        type: DataTypes.STRING,
+    },
+    screen: { // Màn hình: "6.7 inch OLED"
+        type: DataTypes.STRING,
+    },
+    battery: { // Pin: "5000mAh"
+        type: DataTypes.STRING,
     },
     description: {
         type: DataTypes.TEXT,
     }
+    // Sequelize sẽ tự động thêm cột CategoryId khi thiết lập quan hệ
 }, {
     timestamps: true 
 });

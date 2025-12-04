@@ -1,7 +1,8 @@
 const { Product, Category } = require('../models/index');
+const { Favorite, Review, User } = require('../models/index');
 const { Op } = require('sequelize');
 
-const getProductListService = async (queryString) => {
+const getProductListService = async (queryString, userId = null) => {
     try {
         const { 
             page, limit, 
@@ -47,7 +48,7 @@ const getProductListService = async (queryString) => {
         if (ram) whereClause.ram = buildFilter(ram);
         if (rom) whereClause.rom = buildFilter(rom);
 
-        // 4. Lọc theo Danh mục
+        // 4. Lọc theo Danh mục  
         let includeClause = [{ 
             model: Category, 
             attributes: ['id', 'name'],
@@ -71,6 +72,12 @@ const getProductListService = async (queryString) => {
         }
 
         // --- THỰC THI ---
+        console.log("Query conditions:", {
+            whereClause,
+            includeClause,
+            userId
+        });
+
         const { count, rows } = await Product.findAndCountAll({
             where: whereClause,
             include: includeClause, // JOIN bảng Category
@@ -79,16 +86,161 @@ const getProductListService = async (queryString) => {
             order: orderClause
         });
 
-        return {
+        console.log("Query results:", { count, rowsLength: rows.length });
+
+        // Transform products to include isFavorite status
+        const products = rows.map(product => {
+            const productData = product.toJSON();
+            
+            // For now, set isFavorite to false for all products
+            // TODO: Re-implement favorite checking after fixing the association issue
+            productData.isFavorite = false;
+            
+            return productData;
+        });
+
+        const result = {
             totalRows: count,
             totalPages: Math.ceil(count / _limit),
             currentPage: _page,
-            products: rows
+            products: products
         };
+        
+        console.log("Service returning:", result);
+        return result;
     } catch (error) {
-        console.log(error);
+        console.error("ProductService Error:", error);
         return null;
     }
 }
 
 module.exports = { getProductListService };
+
+const getProductDetailService = async (productId, userId = null) => {
+    try {
+        const product = await Product.findByPk(productId, {
+            include: [{ model: Category, attributes: ['id', 'name'] }, {
+                model: Review,
+                include: [{ model: User, attributes: ['id', 'name'] }],
+                order: [['createdAt', 'DESC']]
+            }]
+        });
+
+        if (!product) return null;
+
+        // Get similar products (same CategoryId, exclude current)
+        const similar = await Product.findAll({
+            where: {
+                CategoryId: product.CategoryId,
+                id: { [Op.ne]: product.id }
+            },
+            limit: 6
+        });
+
+        // Count reviews
+        const reviewsCount = await Review.count({ where: { ProductId: productId } });
+
+        // Is favorite for user?
+        let isFavorite = false;
+        if (userId) {
+            const fav = await Favorite.findOne({ where: { UserId: userId, ProductId: productId } });
+            isFavorite = !!fav;
+        }
+
+        return {
+            product,
+            similarProducts: similar,
+            reviewsCount,
+            reviews: product.Reviews || [],
+            isFavorite,
+            sold: product.sold || 0
+        };
+    } catch (error) {
+        console.log(error);
+        return null;
+    }
+};
+
+const toggleFavoriteService = async ({ productId, userId }) => {
+    try {
+        if (!userId) throw new Error('Missing userId');
+
+        const existing = await Favorite.findOne({ where: { UserId: userId, ProductId: productId } });
+        
+        if (existing) {
+            await existing.destroy();
+            return { liked: false };
+        } else {
+            await Favorite.create({ UserId: userId, ProductId: productId });
+            return { liked: true };
+        }
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
+};
+
+const createReviewService = async ({ productId, userId, rating, comment }) => {
+    try {
+        if (!userId) throw new Error('Missing userId');
+        if (!productId) throw new Error('Missing productId');
+
+        const newReview = await Review.create({ rating, comment, UserId: userId, ProductId: productId });
+        return newReview;
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
+};
+
+const getUserFavoritesService = async (userId) => {
+    try {
+        const favoriteRecords = await Favorite.findAll({
+            where: { UserId: userId },
+            include: [{
+                model: Product,
+                include: [{ model: Category, attributes: ['id', 'name'] }]
+            }],
+            order: [['createdAt', 'DESC']]
+        });
+        
+        if (favoriteRecords.length === 0) {
+            return [];
+        }
+        
+        // Extract products from favorite records
+        const products = favoriteRecords
+            .filter(fav => fav.Product) // Filter out null products
+            .map(fav => fav.Product);
+        
+        return products;
+        
+    } catch (error) {
+        console.log(error);
+        return [];
+    }
+};
+
+const removeFavoriteService = async ({ productId, userId }) => {
+    try {
+        if (!userId) throw new Error('Missing userId');
+        
+        const favorite = await Favorite.findOne({ where: { UserId: userId, ProductId: productId } });
+        if (!favorite) throw new Error('Favorite not found');
+        
+        await favorite.destroy();
+        return { success: true };
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
+};
+
+module.exports = { 
+    getProductListService, 
+    getProductDetailService, 
+    toggleFavoriteService, 
+    createReviewService,
+    getUserFavoritesService,
+    removeFavoriteService
+};

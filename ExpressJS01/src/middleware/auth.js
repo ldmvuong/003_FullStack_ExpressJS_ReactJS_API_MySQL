@@ -34,4 +34,24 @@ const auth = (req, res, next) => {
   }
 }
 
-module.exports = auth;
+// Optional auth middleware - sets user info if token is present, but doesn't block request if not
+const optionalAuth = (req, res, next) => {
+  if (req?.headers?.authorization?.split(' ')?.[1]) {
+    const token = req.headers.authorization.split(' ')[1];
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = {
+        email: decoded.email,
+        name: decoded.name,
+        role: decoded.role,
+        createdBy: "hoidanit"
+      }
+    } catch (error) {
+      // Token invalid, but don't block request
+      req.user = null;
+    }
+  }
+  next();
+}
+
+module.exports = { auth, optionalAuth };

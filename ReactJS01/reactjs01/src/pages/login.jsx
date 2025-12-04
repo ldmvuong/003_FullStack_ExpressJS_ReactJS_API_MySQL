@@ -11,27 +11,46 @@ const LoginPage = () => {
 
   const onFinish = async (values) => {
     const { email, password } = values;
-    const res = await loginApi(email, password);
+    
+    try {
+      const res = await loginApi(email, password);
+      console.log("Login response:", res); // Debug log
 
-    if (res && res.EC === 0) {
-      localStorage.setItem("access_token", res.access_token)
-      notification.success({
-        message: "LOGIN USER",
-        description: "Success"
-      });
-      setAuth({
-        isAuthenticated: true,
-        user: {
-          email: res?.user?.email ?? "",
-          name: res?.user?.name ?? ""
-        }
-      })
-      navigate("/");
-    } else {
+      if (res && res.EC === 0) {
+        localStorage.setItem("access_token", res.access_token);
+        
+        // Set auth state first
+        setAuth({
+          isAuthenticated: true,
+          user: {
+            email: res?.user?.email ?? "",
+            name: res?.user?.name ?? ""
+          }
+        });
+
+        notification.success({
+          message: "Đăng nhập thành công",
+          description: "Chào mừng bạn quay lại!"
+        });
+
+        // Navigate with a small delay to ensure state updates
+        setTimeout(() => {
+          console.log("Navigating to home..."); // Debug log
+          navigate("/", { replace: true });
+        }, 100);
+        
+      } else {
+        notification.error({
+          message: "Đăng nhập thất bại",
+          description: res?.EM ?? "Có lỗi xảy ra khi đăng nhập"
+        });
+      }
+    } catch (error) {
+      console.error("Login error:", error);
       notification.error({
-        message: "LOGIN USER",
-        description: res?.EM ?? "error"
-      })
+        message: "Đăng nhập thất bại",
+        description: "Không thể kết nối đến server"
+      });
     }
   };
 

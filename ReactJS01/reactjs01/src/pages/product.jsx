@@ -1,15 +1,24 @@
-import React, { useEffect, useState } from 'react';
-import { getProductApi } from '../util/api';
-import { Card, Col, Row, Button, Input, Select, Spin, Tag, notification } from 'antd';
+import React, { useEffect, useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getProductApi, toggleFavoriteApi } from '../util/api';
+import { Card, Col, Row, Button, Input, Select, Spin, notification, Typography } from 'antd';
+import { EyeOutlined } from '@ant-design/icons';
+import { AuthContext } from '../components/context/auth.context';
+import { getRecentlyViewed } from '../util/recentlyViewed';
+import ProductCard from '../components/product/ProductCard';
 
-const { Meta } = Card;
 const { Search } = Input;
 const { Option } = Select;
+const { Title } = Typography;
 
 const ProductPage = () => {
+    const navigate = useNavigate();
+    const { auth } = useContext(AuthContext);
     const [listProduct, setListProduct] = useState([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [recentProducts, setRecentProducts] = useState([]);
+    const [favoriteLoading, setFavoriteLoading] = useState(new Set());
     
     // State Filter
     const [filter, setFilter] = useState({
@@ -61,7 +70,73 @@ const ProductPage = () => {
         fetchProducts(newFilter);
         
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filter.keyword, filter.sort, filter.category, filter.ram]); 
+    }, [filter.keyword, filter.sort, filter.category, filter.ram]);
+
+    // Load recently viewed products
+    useEffect(() => {
+        const recent = getRecentlyViewed();
+        setRecentProducts(recent);
+    }, []);
+
+    const handleToggleFavorite = async (productId, event) => {
+        event.stopPropagation();
+        
+        if (!auth.isAuthenticated) {
+            notification.warning({ message: 'Vui lòng đăng nhập để sử dụng tính năng yêu thích' });
+            navigate('/login');
+            return;
+        }
+
+        try {
+            setFavoriteLoading(prev => new Set([...prev, productId]));
+            const res = await toggleFavoriteApi(productId);
+            
+            if (res && typeof res.liked === 'boolean') {
+                notification.success({ 
+                    message: res.liked ? 'Đã thêm vào yêu thích' : 'Đã bỏ khỏi yêu thích' 
+                });
+                // Update the product's favorite status in the current list
+                setListProduct(prev => prev.map(product => 
+                    product.id === productId 
+                        ? { ...product, isFavorite: res.liked }
+                        : product
+                ));
+            }
+        } catch (error) {
+            console.error('Error toggling favorite:', error);
+            notification.error({ message: 'Lỗi cập nhật yêu thích' });
+        } finally {
+            setFavoriteLoading(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(productId);
+                return newSet;
+            });
+        }
+    };
+
+    const handleProductClick = (productId) => {
+        navigate(`/product/${productId}`);
+    };
+    
+    const handleAddToCart = (productId) => {
+        if (!auth.isAuthenticated) {
+            notification.warning({ message: 'Vui lòng đăng nhập để thêm vào giỏ hàng' });
+            navigate('/login');
+            return;
+        }
+        // TODO: Implement add to cart functionality
+        notification.success({ message: 'Đã thêm vào giỏ hàng' });
+    };
+    
+    const handleBuyNow = (productId) => {
+        if (!auth.isAuthenticated) {
+            notification.warning({ message: 'Vui lòng đăng nhập để mua hàng' });
+            navigate('/login');
+            return;
+        }
+        // Navigate to product detail or checkout
+        navigate(`/product/${productId}`);
+    }; 
 
     // Các hàm xử lý sự kiện load more
     const handleLoadMore = () => {
@@ -135,28 +210,49 @@ const ProductPage = () => {
             <Row gutter={[16, 16]}>
                 {listProduct.map((item) => (
                     <Col xs={24} sm={12} md={8} lg={6} key={item.id}>
-                        <Card
-                            hoverable
-                            cover={<img alt={item.name} src={item.image} style={{ height: 220, objectFit: 'contain', padding: 10 }} />}
-                        >
-                            <Meta 
-                                title={item.name} 
-                                description={
-                                    <div>
-                                        <div style={{ color: 'red', fontWeight: 'bold', fontSize: 16 }}>
-                                            {item.price.toLocaleString()} đ
-                                        </div>
-                                        <div style={{ marginTop: 5 }}>
-                                            <Tag color="blue">{item.ram}</Tag>
-                                            <Tag color="cyan">{item.rom}</Tag>
-                                        </div>
-                                    </div>
-                                } 
-                            />
-                        </Card>
+                        <ProductCard
+                            product={item}
+                            onProductClick={handleProductClick}
+                            onFavoriteToggle={handleToggleFavorite}
+                            onAddToCart={handleAddToCart}
+                            onBuyNow={handleBuyNow}
+                            favoriteLoading={favoriteLoading.has(item.id)}
+                            showFavoriteButton={true}
+                            showActionButtons={true}
+                        />
                     </Col>
                 ))}
             </Row>
+
+            {/* Recently Viewed Section */}
+            {recentProducts.length > 0 && (
+                <div style={{ marginTop: 40 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                        <Title level={4}>
+                            <EyeOutlined style={{ marginRight: 8, color: '#1890ff' }} />
+                            Sản phẩm đã xem gần đây
+                        </Title>
+                        <Button 
+                            type="link" 
+                            onClick={() => navigate('/recently-viewed')}
+                        >
+                            Xem tất cả
+                        </Button>
+                    </div>
+                    <Row gutter={[16, 16]}>
+                        {recentProducts.slice(0, 4).map((item) => (
+                            <Col xs={12} sm={8} md={6} lg={6} key={item.id}>
+                                <ProductCard
+                                    product={item}
+                                    onProductClick={handleProductClick}
+                                    size="small"
+                                    showFavoriteButton={false}
+                                />
+                            </Col>
+                        ))}
+                    </Row>
+                </div>
+            )}
 
              {/* Nút Xem Thêm */}
              <div style={{ textAlign: 'center', marginTop: 30 }}>

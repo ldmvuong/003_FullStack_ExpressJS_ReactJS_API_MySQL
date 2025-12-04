@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { UsergroupAddOutlined, HomeOutlined, SettingOutlined, AppstoreOutlined } from '@ant-design/icons';
+import { UsergroupAddOutlined, HomeOutlined, SettingOutlined, AppstoreOutlined, HeartOutlined, EyeOutlined } from '@ant-design/icons';
 import { Menu } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/auth.context';
@@ -19,11 +19,23 @@ const Header = () => {
       key: 'products',
       icon: <AppstoreOutlined />,
     },
-    ...(auth.isAuthenticated ? [{
-      label: <Link to={"/user"}>Users</Link>,
-      key: 'user',
-      icon: <UsergroupAddOutlined />,
-    }] : []),
+    {
+      label: <Link to={"/recently-viewed"}>Recently Viewed</Link>,
+      key: 'recently-viewed',
+      icon: <EyeOutlined />,
+    },
+    ...(auth.isAuthenticated ? [
+      {
+        label: <Link to={"/favorites"}>Favorites</Link>,
+        key: 'favorites',
+        icon: <HeartOutlined />,
+      },
+      {
+        label: <Link to={"/user"}>Users</Link>,
+        key: 'user',
+        icon: <UsergroupAddOutlined />,
+      }
+    ] : []),
     {
       label: `Welcome ${auth?.user?.email ?? ""}`,
       key: 'SubMenu',

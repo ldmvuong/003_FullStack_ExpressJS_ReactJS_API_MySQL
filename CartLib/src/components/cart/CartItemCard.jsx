@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Button } from './ui/Button';
-import { COLORS, SPACING, TYPOGRAPHY } from '../theme';
+import { Button } from '../ui/Button';
+import { COLORS, SPACING, TYPOGRAPHY } from '../../theme';
 
 const CardWrapper = styled.div`
   display: flex;

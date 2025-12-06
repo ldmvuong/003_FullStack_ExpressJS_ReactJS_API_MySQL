@@ -6,22 +6,41 @@ export default defineConfig({
   plugins: [react()],
   build: {
     lib: {
-      entry: path.resolve(__dirname, 'src/index.js'), // File đầu vào
+      entry: path.resolve(__dirname, 'src/index.js'),
       name: 'CartLib',
-      fileName: (format) => `cart-lib.${format}.js` // Tên file đầu ra
+      formats: ['es', 'umd'],
+      fileName: (format) => `cart-lib.${format === 'es' ? 'es' : 'umd'}.js`
     },
     rollupOptions: {
-      // Đảm bảo không đóng gói React vào thư viện (dùng React của dự án chính)
-      external: ['react', 'react-dom', 'styled-components', '@apollo/client', 'graphql'],
+      // External dependencies
+      external: [
+        'react',
+        'react-dom',
+        'styled-components',
+      ],
       output: {
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM',
           'styled-components': 'styled',
-          '@apollo/client': 'ApolloClient',
-          'graphql': 'GraphQL'
-        }
-      }
-    }
-  }
+        },
+        // Ensure es modules are properly exported
+        exports: 'named',
+      },
+      // Optimize bundle
+      treeshake: true,
+    },
+    // Minify CSS and JS
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+      },
+    },
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+    },
+  },
 });

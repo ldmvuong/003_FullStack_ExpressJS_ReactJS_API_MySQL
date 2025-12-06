@@ -1,293 +1,111 @@
 import React, { useState } from 'react';
+import styled from 'styled-components';
+import {
+  CartItemCard,
+  CartSummary,
+  Modal,
+  Badge,
+  Button,
+  COLORS,
+  SPACING,
+  TYPOGRAPHY,
+} from '@ldmvuong/cart-lib';
 import { useCart } from '../hooks/useCart';
 
-const styles = {
-  cartContainer: {
-    padding: '20px',
-    maxWidth: '1400px',
-    margin: '0 auto',
-    backgroundColor: '#f5f5f5',
-    minHeight: '100vh',
-  },
-  cartHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '30px',
-    backgroundColor: 'white',
-    padding: '20px',
-    borderRadius: '8px',
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-  },
-  cartHeaderH1: {
-    margin: '0',
-    fontSize: '28px',
-    color: '#333',
-    fontWeight: '600',
-  },
-  cartClearBtn: {
-    padding: '10px 20px',
-    backgroundColor: '#ff4444',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: '500',
-    transition: 'all 0.3s ease',
-  },
-  cartEmpty: {
-    textAlign: 'center',
-    padding: '60px 20px',
-    backgroundColor: 'white',
-    borderRadius: '8px',
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-  },
-  cartEmptyP: {
-    fontSize: '18px',
-    color: '#999',
-    margin: '0',
-  },
-  cartLoading: {
-    textAlign: 'center',
-    padding: '40px',
-    fontSize: '16px',
-    color: '#666',
-  },
-  cartError: {
-    textAlign: 'center',
-    padding: '40px',
-    fontSize: '16px',
-    color: '#ff4444',
-    backgroundColor: '#ffe6e6',
-    borderRadius: '8px',
-  },
-  cartContent: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 350px',
-    gap: '20px',
-    '@media (max-width: 1200px)': {
-      gridTemplateColumns: '1fr',
-    },
-  },
-  cartList: {
-    backgroundColor: 'white',
-    borderRadius: '8px',
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-    overflow: 'hidden',
-  },
-  cartListHeader: {
-    display: 'grid',
-    gridTemplateColumns: '50px 1fr 100px 150px 120px 80px',
-    gap: '15px',
-    padding: '15px 20px',
-    backgroundColor: '#f9f9f9',
-    borderBottom: '2px solid #e0e0e0',
-    fontWeight: '600',
-    color: '#333',
-    fontSize: '14px',
-    alignItems: 'center',
-  },
-  cartCheckboxCell: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-  },
-  cartCheckboxInput: {
-    width: '18px',
-    height: '18px',
-    cursor: 'pointer',
-    accentColor: '#ff6b6b',
-  },
-  cartItem: {
-    display: 'grid',
-    gridTemplateColumns: '50px 1fr 100px 150px 120px 80px',
-    gap: '15px',
-    padding: '15px 20px',
-    borderBottom: '1px solid #e0e0e0',
-    alignItems: 'center',
-    transition: 'all 0.3s ease',
-  },
-  cartItemSelected: {
-    backgroundColor: '#fffbea',
-  },
-  cartCheckbox: {
-    width: '18px',
-    height: '18px',
-    cursor: 'pointer',
-    accentColor: '#ff6b6b',
-  },
-  cartProductImage: {
-    width: '60px',
-    height: '60px',
-    borderRadius: '6px',
-    overflow: 'hidden',
-    backgroundColor: '#f0f0f0',
-    flexShrink: '0',
-  },
-  cartProductImageImg: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-  },
-  cartProductInfo: {
-    flex: '1',
-    minWidth: '0',
-  },
-  cartProductInfoH4: {
-    margin: '0',
-    fontSize: '14px',
-    color: '#333',
-    fontWeight: '500',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  },
-  cartPrice: {
-    fontSize: '14px',
-    color: '#ff6b6b',
-    fontWeight: '600',
-  },
-  cartQuantityControl: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    overflow: 'hidden',
-    backgroundColor: '#fff',
-  },
-  cartBtn: {
-    width: '32px',
-    height: '32px',
-    border: 'none',
-    backgroundColor: '#f5f5f5',
-    color: '#333',
-    cursor: 'pointer',
-    fontSize: '16px',
-    fontWeight: '600',
-    transition: 'all 0.2s ease',
-    flexShrink: '0',
-  },
-  cartQuantityInput: {
-    width: '50px',
-    height: '32px',
-    border: 'none',
-    textAlign: 'center',
-    fontSize: '14px',
-    fontWeight: '500',
-  },
-  cartTotal: {
-    fontSize: '14px',
-    color: '#333',
-    fontWeight: '600',
-  },
-  cartRemoveBtn: {
-    padding: '6px 12px',
-    backgroundColor: '#fff',
-    border: '1px solid #ff6b6b',
-    color: '#ff6b6b',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '12px',
-    fontWeight: '500',
-    transition: 'all 0.2s ease',
-  },
-  cartSummary: {
-    backgroundColor: 'white',
-    borderRadius: '8px',
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-    overflow: 'hidden',
-    position: 'sticky',
-    top: '20px',
-    height: 'fit-content',
-  },
-  cartSummaryHeader: {
-    padding: '15px 20px',
-    backgroundColor: '#f9f9f9',
-    borderBottom: '2px solid #e0e0e0',
-  },
-  cartSummaryHeaderH3: {
-    margin: '0',
-    fontSize: '16px',
-    color: '#333',
-    fontWeight: '600',
-  },
-  cartSummaryContent: {
-    padding: '20px',
-  },
-  cartSummaryRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '15px',
-    fontSize: '14px',
-  },
-  cartSummaryRowHighlighted: {
-    marginBottom: '0',
-    paddingTop: '15px',
-    borderTop: '2px solid #e0e0e0',
-  },
-  cartLabel: {
-    color: '#666',
-    fontWeight: '500',
-  },
-  cartValue: {
-    color: '#333',
-    fontWeight: '600',
-  },
-  cartSelectedTotal: {
-    fontSize: '18px',
-    color: '#ff6b6b',
-  },
-  cartDivider: {
-    height: '1px',
-    backgroundColor: '#e0e0e0',
-    margin: '15px 0',
-  },
-  cartSummaryActions: {
-    padding: '20px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px',
-    borderTop: '1px solid #e0e0e0',
-  },
-  cartCheckoutBtn: {
-    width: '100%',
-    padding: '12px 16px',
-    backgroundColor: '#ff6b6b',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '14px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'all 0.3s ease',
-  },
-  cartContinueShoppingBtn: {
-    width: '100%',
-    padding: '12px 16px',
-    backgroundColor: 'transparent',
-    color: '#ff6b6b',
-    border: '2px solid #ff6b6b',
-    borderRadius: '6px',
-    fontSize: '14px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'all 0.3s ease',
-  },
-  cartSummaryFooter: {
-    padding: '15px 20px',
-    backgroundColor: '#fffbea',
-    borderTop: '1px solid #e0e0e0',
-  },
-  cartSummaryFooterP: {
-    margin: '0',
-    fontSize: '12px',
-    color: '#999',
-    lineHeight: '1.5',
-  },
-};
+// ============ Styled Components ============
+
+const PageContainer = styled.div`
+  padding: ${SPACING.xl};
+  max-width: 1400px;
+  margin: 0 auto;
+  background-color: ${COLORS.bgLight};
+  min-height: 100vh;
+  font-family: ${TYPOGRAPHY.fontFamily};
+`;
+
+const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: ${SPACING.xxl};
+  background-color: ${COLORS.bgWhite};
+  padding: ${SPACING.xl};
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  h1 {
+    margin: 0;
+    font-size: ${TYPOGRAPHY.fontSize.xxl};
+    color: ${COLORS.textPrimary};
+  }
+
+  .header-actions {
+    display: flex;
+    gap: ${SPACING.md};
+  }
+`;
+
+const ContentLayout = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: ${SPACING.xl};
+
+  @media (max-width: 1200px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const CartItemsContainer = styled.div`
+  background-color: ${COLORS.bgWhite};
+  border-radius: 8px;
+  padding: ${SPACING.xl};
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+`;
+
+const EmptyState = styled.div`
+  text-align: center;
+  padding: ${SPACING.xxxl};
+  color: ${COLORS.textLight};
+
+  .empty-icon {
+    font-size: 64px;
+    margin-bottom: ${SPACING.lg};
+  }
+
+  .empty-text {
+    font-size: ${TYPOGRAPHY.fontSize.lg};
+    margin-bottom: ${SPACING.lg};
+  }
+
+  .empty-link {
+    color: ${COLORS.primary};
+    text-decoration: none;
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+`;
+
+const LoadingContainer = styled.div`
+  text-align: center;
+  padding: ${SPACING.xxxl};
+  color: ${COLORS.textSecondary};
+  font-size: ${TYPOGRAPHY.fontSize.lg};
+`;
+
+const ErrorContainer = styled.div`
+  background-color: ${COLORS.danger}20;
+  border: 1px solid ${COLORS.danger};
+  border-radius: 8px;
+  padding: ${SPACING.xl};
+  color: ${COLORS.danger};
+  margin-bottom: ${SPACING.xl};
+  font-weight: ${TYPOGRAPHY.fontWeight.semibold};
+`;
+
+// ============ Main Component ============
 
 const CartPage = () => {
   const {
@@ -297,343 +115,218 @@ const CartPage = () => {
     updateItemQuantity,
     removeItem,
     selectItem,
-    selectMultipleItems,
     clearCart,
+    refetch,
   } = useCart();
 
+  const [isConfirmClear, setIsConfirmClear] = useState(false);
+  const [apiError, setApiError] = useState(null);
+
+  // ============ Data Processing ============
+
+  const items = cart?.items || [];
+  const selectedItems = items.filter((item) => item.isSelected);
+  const selectedTotal = selectedItems.reduce(
+    (sum, item) => sum + item.Product.price * item.quantity,
+    0
+  );
+
+  // ============ Event Handlers ============
+
+  const handleSelectItem = async (itemId, isSelected) => {
+    try {
+      setApiError(null);
+      await selectItem({
+        variables: { itemId, isSelected },
+      });
+      refetch();
+    } catch (err) {
+      setApiError('Lỗi khi chọn sản phẩm: ' + err.message);
+      console.error('Error selecting item:', err);
+    }
+  };
+
+  const handleIncrease = async (itemId, currentQty) => {
+    try {
+      setApiError(null);
+      await updateItemQuantity({
+        variables: { itemId, quantity: currentQty + 1 },
+      });
+      refetch();
+    } catch (err) {
+      setApiError('Lỗi khi cập nhật số lượng: ' + err.message);
+      console.error('Error increasing quantity:', err);
+    }
+  };
+
+  const handleDecrease = async (itemId, currentQty) => {
+    if (currentQty <= 1) return;
+    try {
+      setApiError(null);
+      await updateItemQuantity({
+        variables: { itemId, quantity: currentQty - 1 },
+      });
+      refetch();
+    } catch (err) {
+      setApiError('Lỗi khi cập nhật số lượng: ' + err.message);
+      console.error('Error decreasing quantity:', err);
+    }
+  };
+
+  const handleDeleteItem = async (itemId) => {
+    try {
+      setApiError(null);
+      await removeItem({
+        variables: { itemId },
+      });
+      refetch();
+    } catch (err) {
+      setApiError('Lỗi khi xóa sản phẩm: ' + err.message);
+      console.error('Error removing item:', err);
+    }
+  };
+
+  const handleClearCart = async () => {
+    try {
+      setApiError(null);
+      await clearCart();
+      refetch();
+      setIsConfirmClear(false);
+    } catch (err) {
+      setApiError('Lỗi khi xóa giỏ hàng: ' + err.message);
+      console.error('Error clearing cart:', err);
+    }
+  };
+
+  const handleCheckout = () => {
+    if (selectedItems.length === 0) {
+      setApiError('Vui lòng chọn ít nhất 1 sản phẩm để tiếp tục');
+      return;
+    }
+    console.log('Proceeding to checkout with:', {
+      items: selectedItems,
+      total: selectedTotal,
+    });
+    // TODO: Chuyển hướng đến trang checkout
+    // window.location.href = '/checkout';
+  };
+
+  // ============ Render ============
+
   if (loading) {
-    return <div style={styles.cartLoading}>Đang tải giỏ hàng...</div>;
+    return (
+      <PageContainer>
+        <LoadingContainer>⏳ Đang tải giỏ hàng...</LoadingContainer>
+      </PageContainer>
+    );
   }
 
-  // Nếu có error, hiển thị giỏ trống thay vì error message
-  const items = (error ? [] : cart?.items) || [];
-  const selectedItems = items.filter((item) => item.isSelected);
-  const selectedTotal = selectedItems.reduce((sum, item) => sum + item.total, 0);
-
-  const handleSelectAll = (isSelected) => {
-    if (items.length === 0) return;
-    const itemIds = items.map((item) => item.id);
-    selectMultipleItems({
-      variables: {
-        itemIds,
-        isSelected,
-      },
-    });
-  };
-
-  const handleUpdateQuantity = (itemId, newQuantity) => {
-    if (newQuantity === 0) {
-      handleRemoveItem(itemId);
-    } else {
-      updateItemQuantity({
-        variables: {
-          itemId,
-          quantity: newQuantity,
-        },
-      });
-    }
-  };
-
-  const handleRemoveItem = (itemId) => {
-    removeItem({
-      variables: {
-        itemId,
-      },
-    });
-  };
-
-  const handleSelectItem = (itemId, isSelected) => {
-    selectItem({
-      variables: {
-        itemId,
-        isSelected,
-      },
-    });
-  };
-
-  const handleClearCart = () => {
-    if (window.confirm('Bạn có chắc muốn xóa tất cả sản phẩm trong giỏ hàng?')) {
-      clearCart();
-    }
-  };
-
-  const handleQuantityChange = (itemId, delta) => {
-    const item = items.find((i) => i.id === itemId);
-    if (item) {
-      const newQuantity = item.quantity + delta;
-      if (newQuantity > 0) {
-        handleUpdateQuantity(itemId, newQuantity);
-      }
-    }
-  };
-
-  const handleDirectInput = (itemId, value) => {
-    const newQuantity = parseInt(value) || 0;
-    if (newQuantity > 0) {
-      handleUpdateQuantity(itemId, newQuantity);
-    }
-  };
+  if (error && !apiError) {
+    return (
+      <PageContainer>
+        <ErrorContainer>❌ Lỗi: {error.message}</ErrorContainer>
+      </PageContainer>
+    );
+  }
 
   return (
-    <div style={styles.cartContainer}>
-      <div style={styles.cartHeader}>
-        <h1 style={styles.cartHeaderH1}>Giỏ Hàng của Tôi</h1>
-        {items.length > 0 && (
-          <button 
-            style={styles.cartClearBtn}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#e63333';
-              e.target.style.transform = 'translateY(-2px)';
-              e.target.style.boxShadow = '0 4px 8px rgba(255, 68, 68, 0.3)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = '#ff4444';
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = 'none';
-            }}
-            onClick={handleClearCart}
-          >
-            Xóa Tất Cả
-          </button>
-        )}
-      </div>
-
-      {items.length === 0 ? (
-        <div style={styles.cartEmpty}>
-          <p style={styles.cartEmptyP}>Giỏ hàng của bạn hiện đang trống</p>
+    <PageContainer>
+      {/* Header */}
+      <Header>
+        <div>
+          <h1>🛒 Giỏ hàng</h1>
+          {items.length > 0 && (
+            <Badge variant="primary" size="small">
+              {items.length} sản phẩm
+            </Badge>
+          )}
         </div>
-      ) : (
-        <div style={styles.cartContent}>
-          <div style={styles.cartList}>
-            <div style={styles.cartListHeader}>
-              <div style={styles.cartCheckboxCell}>
-                <input
-                  type="checkbox"
-                  checked={items.length > 0 && items.every((item) => item.isSelected)}
-                  onChange={(e) => handleSelectAll(e.target.checked)}
-                  style={styles.cartCheckboxInput}
-                />
-                <span>Chọn Tất Cả</span>
-              </div>
-              <div>Sản Phẩm</div>
-              <div style={{ textAlign: 'center' }}>Giá</div>
-              <div style={{ textAlign: 'center' }}>Số Lượng</div>
-              <div style={{ textAlign: 'right' }}>Thành Tiền</div>
-              <div style={{ textAlign: 'center' }}>Thao Tác</div>
-            </div>
+        <div className="header-actions">
+          {items.length > 0 && (
+            <Button
+              variant="outline"
+              color={COLORS.danger}
+              onClick={() => setIsConfirmClear(true)}
+            >
+              🗑️ Xóa tất cả
+            </Button>
+          )}
+          <Button onClick={() => (window.location.href = '/products')}>
+            ← Tiếp tục mua
+          </Button>
+        </div>
+      </Header>
 
+      {/* Error Message */}
+      {apiError && <ErrorContainer>{apiError}</ErrorContainer>}
+
+      {/* Empty State */}
+      {items.length === 0 ? (
+        <CartItemsContainer>
+          <EmptyState>
+            <div className="empty-icon">📦</div>
+            <div className="empty-text">Giỏ hàng của bạn trống</div>
+            <a
+              className="empty-link"
+              onClick={() => (window.location.href = '/products')}
+            >
+              Quay lại mua hàng
+            </a>
+          </EmptyState>
+        </CartItemsContainer>
+      ) : (
+        <ContentLayout>
+          {/* Cart Items */}
+          <CartItemsContainer>
             {items.map((item) => (
-              <CartItem
+              <CartItemCard
                 key={item.id}
-                item={item}
-                onSelectChange={(isSelected) =>
-                  handleSelectItem(item.id, isSelected)
-                }
-                onQuantityChange={(delta) =>
-                  handleQuantityChange(item.id, delta)
-                }
-                onDirectInput={(value) =>
-                  handleDirectInput(item.id, value)
-                }
-                onRemove={() => handleRemoveItem(item.id)}
+                id={item.id}
+                name={item.Product.name}
+                price={item.Product.price}
+                image={item.Product.image}
+                quantity={item.quantity}
+                isSelected={item.isSelected}
+                onSelect={handleSelectItem}
+                onIncrease={handleIncrease}
+                onDecrease={handleDecrease}
+                onDelete={handleDeleteItem}
               />
             ))}
-          </div>
+          </CartItemsContainer>
 
+          {/* Cart Summary */}
           <CartSummary
-            grandTotal={cart?.grandTotal || 0}
-            selectedTotal={selectedTotal}
-            selectedCount={selectedItems.length}
+            total={selectedTotal}
+            count={selectedItems.length}
+            totalItems={items.length}
+            onCheckout={handleCheckout}
+            onContinueShopping={() => (window.location.href = '/products')}
+            shipping={0}
+            discount={0}
           />
-        </div>
+        </ContentLayout>
       )}
-    </div>
-  );
-};
 
-const CartItem = ({ item, onSelectChange, onQuantityChange, onDirectInput, onRemove }) => {
-  const product = item.Product || {};
-
-  return (
-    <div 
-      style={{
-        ...styles.cartItem,
-        ...(item.isSelected && styles.cartItemSelected),
-        backgroundColor: item.isSelected ? '#fffbea' : 'transparent',
-      }}
-      onMouseEnter={(e) => {
-        if (!item.isSelected) e.currentTarget.style.backgroundColor = '#f9f9f9';
-      }}
-      onMouseLeave={(e) => {
-        if (!item.isSelected) e.currentTarget.style.backgroundColor = 'transparent';
-      }}
-    >
-      <div style={styles.cartCheckboxCell}>
-        <input
-          type="checkbox"
-          checked={item.isSelected}
-          onChange={(e) => onSelectChange(e.target.checked)}
-          style={styles.cartCheckbox}
-        />
-      </div>
-
-      <div style={styles.cartCheckboxCell}>
-        <div style={styles.cartProductImage}>
-          <img src={product.image} alt={product.name} style={styles.cartProductImageImg} />
-        </div>
-        <div style={styles.cartProductInfo}>
-          <h4 style={styles.cartProductInfoH4}>{product.name}</h4>
-        </div>
-      </div>
-
-      <div style={{ textAlign: 'center' }}>
-        <span style={styles.cartPrice}>
-          {product.price?.toLocaleString('vi-VN')} ₫
-        </span>
-      </div>
-
-      <div style={{ textAlign: 'center' }}>
-        <div style={styles.cartQuantityControl}>
-          <button
-            style={styles.cartBtn}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#ff6b6b';
-              e.target.style.color = 'white';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = '#f5f5f5';
-              e.target.style.color = '#333';
-            }}
-            onClick={() => onQuantityChange(-1)}
-          >
-            −
-          </button>
-          <input
-            type="number"
-            value={item.quantity}
-            onChange={(e) => onDirectInput(e.target.value)}
-            style={styles.cartQuantityInput}
-            min="1"
-            onFocus={(e) => {
-              e.target.style.backgroundColor = '#fff3f3';
-            }}
-            onBlur={(e) => {
-              e.target.style.backgroundColor = 'transparent';
-            }}
-          />
-          <button
-            style={styles.cartBtn}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#ff6b6b';
-              e.target.style.color = 'white';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = '#f5f5f5';
-              e.target.style.color = '#333';
-            }}
-            onClick={() => onQuantityChange(1)}
-          >
-            +
-          </button>
-        </div>
-      </div>
-
-      <div style={{ textAlign: 'right' }}>
-        <span style={styles.cartTotal}>
-          {item.total?.toLocaleString('vi-VN')} ₫
-        </span>
-      </div>
-
-      <div style={{ textAlign: 'center' }}>
-        <button 
-          style={styles.cartRemoveBtn}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = '#ff6b6b';
-            e.target.style.color = 'white';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = '#fff';
-            e.target.style.color = '#ff6b6b';
-          }}
-          onClick={onRemove}
-        >
-          Xóa
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const CartSummary = ({ grandTotal, selectedTotal, selectedCount }) => {
-  return (
-    <div style={styles.cartSummary}>
-      <div style={styles.cartSummaryHeader}>
-        <h3 style={styles.cartSummaryHeaderH3}>Tóm Tắt Đơn Hàng</h3>
-      </div>
-
-      <div style={styles.cartSummaryContent}>
-        <div style={styles.cartSummaryRow}>
-          <span style={styles.cartLabel}>Số sản phẩm đã chọn:</span>
-          <span style={styles.cartValue}>{selectedCount}</span>
-        </div>
-
-        <div style={styles.cartSummaryRow}>
-          <span style={styles.cartLabel}>Tổng giá trị giỏ hàng:</span>
-          <span style={styles.cartValue}>
-            {grandTotal?.toLocaleString('vi-VN')} ₫
-          </span>
-        </div>
-
-        <div style={styles.cartDivider}></div>
-
-        <div style={{ ...styles.cartSummaryRow, ...styles.cartSummaryRowHighlighted }}>
-          <span style={styles.cartLabel}>Tổng cần thanh toán:</span>
-          <span style={{ ...styles.cartValue, ...styles.cartSelectedTotal }}>
-            {selectedTotal?.toLocaleString('vi-VN')} ₫
-          </span>
-        </div>
-      </div>
-
-      <div style={styles.cartSummaryActions}>
-        <button 
-          style={styles.cartCheckoutBtn}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = '#ff5252';
-            e.target.style.transform = 'translateY(-2px)';
-            e.target.style.boxShadow = '0 4px 12px rgba(255, 107, 107, 0.3)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = '#ff6b6b';
-            e.target.style.transform = 'translateY(0)';
-            e.target.style.boxShadow = 'none';
-          }}
-        >
-          Tiến Hành Thanh Toán
-        </button>
-        <button 
-          style={styles.cartContinueShoppingBtn}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = '#fff3f3';
-            e.target.style.borderColor = '#ff5252';
-            e.target.style.color = '#ff5252';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = 'transparent';
-            e.target.style.borderColor = '#ff6b6b';
-            e.target.style.color = '#ff6b6b';
-          }}
-        >
-          Tiếp Tục Mua Sắm
-        </button>
-      </div>
-
-      <div style={styles.cartSummaryFooter}>
-        <p style={styles.cartSummaryFooterP}>
-          Bạn có thể sử dụng các phương thức thanh toán khác nhau trong
-          quá trình thanh toán.
+      {/* Confirm Clear Modal */}
+      <Modal
+        isOpen={isConfirmClear}
+        onClose={() => setIsConfirmClear(false)}
+        title="Xóa toàn bộ giỏ hàng?"
+        confirmText="Xóa"
+        cancelText="Hủy"
+        confirmColor={COLORS.danger}
+        onConfirm={handleClearCart}
+      >
+        <p>
+          Bạn chắc chắn muốn xóa toàn bộ {items.length} sản phẩm trong giỏ
+          hàng?
         </p>
-      </div>
-    </div>
+        <p style={{ color: COLORS.textLight, fontSize: TYPOGRAPHY.fontSize.sm }}>
+          ⚠️ Hành động này không thể hoàn tác.
+        </p>
+      </Modal>
+    </PageContainer>
   );
 };
 

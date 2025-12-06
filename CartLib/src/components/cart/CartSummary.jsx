@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Button } from './ui/Button';
-import { COLORS, SPACING, TYPOGRAPHY } from '../theme';
+import { Button } from '../ui/Button';
+import { COLORS, SPACING, TYPOGRAPHY } from '../../theme';
 
 const Wrapper = styled.div`
   padding: ${SPACING.xl};
@@ -61,9 +61,9 @@ export const CartSummary = ({
   onCheckout,
   onContinueShopping,
   disabled = false,
+  shipping = 0,
+  discount = 0,
 }) => {
-  const discount = 0; // Có thể thêm logic tính toán giảm giá
-  const shipping = count > 0 ? 25000 : 0; // Phí vận chuyển
   const finalTotal = total + shipping - discount;
 
   return (

@@ -14,6 +14,7 @@ import ProductPage from './pages/product.jsx';
 import ProductDetailPage from './pages/productDetail.jsx';
 import FavoritesPage from './pages/favorites.jsx';
 import RecentlyViewedPage from './pages/recentlyViewed.jsx';
+import CartPage from './pages/cart.jsx';
 import { AuthWrapper } from './components/context/auth.context.jsx';
 
 const router = createBrowserRouter([
@@ -44,6 +45,10 @@ const router = createBrowserRouter([
       {
         path: "recently-viewed",
         element: <RecentlyViewedPage />
+      },
+      {
+        path: "cart",
+        element: <CartPage />
       }
     ]
   },

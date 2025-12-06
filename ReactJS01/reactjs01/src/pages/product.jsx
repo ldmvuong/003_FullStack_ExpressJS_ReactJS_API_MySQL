@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getProductApi, toggleFavoriteApi } from '../util/api';
-import { Card, Col, Row, Button, Input, Select, Spin, notification, Typography } from 'antd';
+import { Card, Col, Row, Button, Input, Select, Spin, notification, Typography, Modal, InputNumber } from 'antd';
 import { EyeOutlined } from '@ant-design/icons';
 import { AuthContext } from '../components/context/auth.context';
 import { getRecentlyViewed } from '../util/recentlyViewed';
 import ProductCard from '../components/product/ProductCard';
+import { useCart } from '../hooks/useCart';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -14,11 +15,13 @@ const { Title } = Typography;
 const ProductPage = () => {
     const navigate = useNavigate();
     const { auth } = useContext(AuthContext);
+    const { addToCart } = useCart();
     const [listProduct, setListProduct] = useState([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(false);
     const [recentProducts, setRecentProducts] = useState([]);
     const [favoriteLoading, setFavoriteLoading] = useState(new Set());
+    const [addToCartLoading, setAddToCartLoading] = useState(new Set());
     
     // State Filter
     const [filter, setFilter] = useState({
@@ -118,14 +121,40 @@ const ProductPage = () => {
         navigate(`/product/${productId}`);
     };
     
-    const handleAddToCart = (productId) => {
+    const handleAddToCart = async (productId) => {
         if (!auth.isAuthenticated) {
             notification.warning({ message: 'Vui lòng đăng nhập để thêm vào giỏ hàng' });
             navigate('/login');
             return;
         }
-        // TODO: Implement add to cart functionality
-        notification.success({ message: 'Đã thêm vào giỏ hàng' });
+        
+        const product = listProduct.find(p => p.id === productId);
+        if (!product) return;
+        
+        try {
+            setAddToCartLoading(prev => new Set([...prev, productId]));
+            await addToCart({
+                variables: {
+                    productId: productId.toString(),
+                    quantity: 1
+                }
+            });
+            notification.success({ 
+                message: 'Thành công',
+                description: 'Đã thêm 1 sản phẩm vào giỏ hàng' 
+            });
+        } catch (error) {
+            notification.error({ 
+                message: 'Lỗi',
+                description: error.message || 'Không thể thêm vào giỏ hàng' 
+            });
+        } finally {
+            setAddToCartLoading(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(productId);
+                return newSet;
+            });
+        }
     };
     
     const handleBuyNow = (productId) => {

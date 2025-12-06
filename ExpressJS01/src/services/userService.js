@@ -61,6 +61,7 @@ const loginService = async (email, password) => {
                 const roleName = user.Role ? user.Role.description : 'User';
 
                 const payload = {
+                    id: user.id,
                     email: user.email,
                     name: user.name,
                     role: roleName // Lưu chuỗi "Admin" hoặc "User" vào token

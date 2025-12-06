@@ -6,6 +6,11 @@ const CartItem = sequelize.define('CartItem', {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 1
+    },
+    isSelected: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true
     }
 }, { timestamps: true });
 

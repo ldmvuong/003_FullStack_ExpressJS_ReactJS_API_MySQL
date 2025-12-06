@@ -1,13 +1,18 @@
 import React, { useContext, useState } from 'react';
-import { UsergroupAddOutlined, HomeOutlined, SettingOutlined, AppstoreOutlined, HeartOutlined, EyeOutlined } from '@ant-design/icons';
-import { Menu } from 'antd';
+import { UsergroupAddOutlined, HomeOutlined, SettingOutlined, AppstoreOutlined, HeartOutlined, EyeOutlined, ShoppingCartOutlined } from '@ant-design/icons';
+import { Menu, Badge } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/auth.context';
+import { useCart } from '../../hooks/useCart';
 
 const Header = () => {
   const navigate = useNavigate();
   const { auth, setAuth } = useContext(AuthContext);
+  const { cart } = useCart();
   console.log(">>> check auth: ", auth)
+  
+  const cartItemCount = cart?.items?.length || 0;
+  
   const items = [
     {
       label: <Link to={"/"}>Home Page</Link>,
@@ -25,6 +30,16 @@ const Header = () => {
       icon: <EyeOutlined />,
     },
     ...(auth.isAuthenticated ? [
+      {
+        label: <Link to={"/cart"}>
+          <Badge count={cartItemCount} showZero>
+            <ShoppingCartOutlined style={{ fontSize: 16 }} />
+          </Badge>
+          Cart
+        </Link>,
+        key: 'cart',
+        icon: null,
+      },
       {
         label: <Link to={"/favorites"}>Favorites</Link>,
         key: 'favorites',

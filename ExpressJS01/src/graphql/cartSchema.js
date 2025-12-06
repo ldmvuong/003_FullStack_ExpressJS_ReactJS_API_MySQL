@@ -1,6 +1,6 @@
-import { Cart, CartItem, Product } from '../models/index.js';
+const { Cart, CartItem, Product } = require('../models/index.js');
 
-export const typeDefs = `#graphql
+const typeDefs = `#graphql
   type Product {
     id: ID
     name: String
@@ -36,7 +36,7 @@ export const typeDefs = `#graphql
   }
 `;
 
-export const resolvers = {
+const resolvers = {
   CartItem: {
     total: (parent) => {
         return parent.quantity * (parent.Product ? parent.Product.price : 0);
@@ -102,3 +102,5 @@ export const resolvers = {
     }
   }
 };
+
+module.exports = { typeDefs, resolvers };

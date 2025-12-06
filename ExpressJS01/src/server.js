@@ -39,24 +39,36 @@ const startServer = async () => {
         typeDefs,
         resolvers,
         context: ({ req }) => {
-            const token = req.headers.authorization || '';
+            const authHeader = req.headers.authorization || '';
             try {
-                if (token.startsWith("Bearer ")) {
-                    const decoded = jwt.verify(token.split(" ")[1], process.env.JWT_SECRET);
+                if (authHeader.startsWith("Bearer ")) {
+                    const token = authHeader.split(" ")[1];
+                    const decoded = jwt.verify(token, process.env.JWT_SECRET);
                     return { user: decoded };
                 }
             } catch (e) {}
             return { user: null };
-        }
+        },
+        introspection: true
     });
 
     // --- QUAN TRỌNG V3: Phải start() trước ---
     await server.start();
 
     // 4. Middleware chung
-    app.use(cors());
+    const corsOptions = {
+        origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:8080'],
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization']
+    };
+    
+    app.use(cors(corsOptions));
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
+    
+    // Handle OPTIONS for preflight
+    app.options('*', cors(corsOptions));
     
     configViewEngine(app);
 
@@ -67,7 +79,15 @@ const startServer = async () => {
 
     app.use('/v1/api/', limiter, apiRoutes);
 
-    server.applyMiddleware({ app }); 
+    server.applyMiddleware({ 
+        app,
+        cors: {
+            origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:8080'],
+            credentials: true,
+            methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+            allowedHeaders: ['Content-Type', 'Authorization']
+        }
+    }); 
 
     // 6. Start Server
     app.listen(port, () => {

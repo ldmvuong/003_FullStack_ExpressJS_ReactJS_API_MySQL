@@ -4,6 +4,8 @@ import axios from "./util/axios.customize"
 import { useContext, useEffect } from "react"
 import { AuthContext } from "./components/context/auth.context";
 import { Spin } from "antd";
+import { ApolloProvider } from "@apollo/client";
+import apolloClient from "./util/apolloClient";
 
 function App() {
   const { auth, setAuth, appLoading, setAppLoading } = useContext(AuthContext);
@@ -30,23 +32,25 @@ function App() {
   }, [])
 
   return (
-    <div>
-      {appLoading === true ?
-        <div style={{
-          position: "fixed",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%,-50%)"
-        }}>
-          <Spin />
-        </div>
-        :
-        <>
-          <Header />
-          <Outlet />
-        </>
-      }
-    </div>
+    <ApolloProvider client={apolloClient}>
+      <div>
+        {appLoading === true ?
+          <div style={{
+            position: "fixed",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%,-50%)"
+          }}>
+            <Spin />
+          </div>
+          :
+          <>
+            <Header />
+            <Outlet />
+          </>
+        }
+      </div>
+    </ApolloProvider>
   )
 }
 

@@ -1,9 +1,11 @@
 const User = require('./user');
 const Role = require('./role');
-const Category = require('./category'); // <--- Import mới
+const Category = require('./category');
 const Product = require('./product');
 const Favorite = require('./favorite');
 const Review = require('./review');
+const Cart = require('./cart');
+const CartItem = require('./cartItem');
 const { sequelize } = require('../config/database');
 
 // 1. Định nghĩa quan hệ
@@ -30,6 +32,15 @@ Review.belongsTo(User);
 
 Product.hasMany(Review);
 Review.belongsTo(Product);
+
+User.hasOne(Cart);
+Cart.belongsTo(User);
+
+Cart.hasMany(CartItem);
+CartItem.belongsTo(Cart);
+
+Product.hasMany(CartItem);
+CartItem.belongsTo(Product);
 
 const initDatabase = async () => {
     try {
@@ -169,4 +180,4 @@ const seedCategoriesAndProducts = async () => {
     }
 }
 
-module.exports = { User, Role, Category, Product, Favorite, Review, initDatabase };
+module.exports = { User, Role, Category, Product, Favorite, Review, Cart, CartItem, initDatabase };

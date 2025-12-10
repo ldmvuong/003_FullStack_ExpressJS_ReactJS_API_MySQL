@@ -14,34 +14,19 @@ import {
 export const useCart = () => {
   const { auth } = useContext(AuthContext);
   
-  // Skip query if user is not authenticated
   const { data, loading, error, refetch } = useQuery(GET_MY_CART, {
     skip: !auth?.isAuthenticated,
+    fetchPolicy: 'cache-first' // Sử dụng cache trước, nếu không có mới gọi mạng
+    // cache-and-network // Luôn gọi mạng để lấy dữ liệu mới nhất nhưng vẫn dùng cache để hiển thị nhanh
+    // network-only // Luôn gọi mạng, không dùng cache
   });
   
-  const [addToCart] = useMutation(ADD_TO_CART, {
-    onCompleted: () => refetch(),
-  });
-  
-  const [updateItemQuantity] = useMutation(UPDATE_ITEM_QUANTITY, {
-    onCompleted: () => refetch(),
-  });
-  
-  const [removeItem] = useMutation(REMOVE_ITEM, {
-    onCompleted: () => refetch(),
-  });
-  
-  const [selectItem] = useMutation(SELECT_ITEM, {
-    onCompleted: () => refetch(),
-  });
-  
-  const [selectMultipleItems] = useMutation(SELECT_MULTIPLE_ITEMS, {
-    onCompleted: () => refetch(),
-  });
-  
-  const [clearCart] = useMutation(CLEAR_CART, {
-    onCompleted: () => refetch(),
-  });
+  const [addToCart] = useMutation(ADD_TO_CART);
+  const [updateItemQuantity] = useMutation(UPDATE_ITEM_QUANTITY);
+  const [removeItem] = useMutation(REMOVE_ITEM);
+  const [selectItem] = useMutation(SELECT_ITEM);
+  const [selectMultipleItems] = useMutation(SELECT_MULTIPLE_ITEMS);
+  const [clearCart] = useMutation(CLEAR_CART);
 
   return {
     cart: data?.myCart || { items: [], grandTotal: 0 },

@@ -116,7 +116,6 @@ const CartPage = () => {
     removeItem,
     selectItem,
     clearCart,
-    refetch,
   } = useCart();
 
   const [isConfirmClear, setIsConfirmClear] = useState(false);
@@ -131,15 +130,13 @@ const CartPage = () => {
     0
   );
 
-  // ============ Event Handlers ============
-
+  
   const handleSelectItem = async (itemId, isSelected) => {
     try {
       setApiError(null);
       await selectItem({
         variables: { itemId, isSelected },
       });
-      refetch();
     } catch (err) {
       setApiError('Lỗi khi chọn sản phẩm: ' + err.message);
       console.error('Error selecting item:', err);
@@ -152,7 +149,6 @@ const CartPage = () => {
       await updateItemQuantity({
         variables: { itemId, quantity: currentQty + 1 },
       });
-      refetch();
     } catch (err) {
       setApiError('Lỗi khi cập nhật số lượng: ' + err.message);
       console.error('Error increasing quantity:', err);
@@ -166,7 +162,6 @@ const CartPage = () => {
       await updateItemQuantity({
         variables: { itemId, quantity: currentQty - 1 },
       });
-      refetch();
     } catch (err) {
       setApiError('Lỗi khi cập nhật số lượng: ' + err.message);
       console.error('Error decreasing quantity:', err);
@@ -179,7 +174,6 @@ const CartPage = () => {
       await removeItem({
         variables: { itemId },
       });
-      refetch();
     } catch (err) {
       setApiError('Lỗi khi xóa sản phẩm: ' + err.message);
       console.error('Error removing item:', err);
@@ -190,7 +184,7 @@ const CartPage = () => {
     try {
       setApiError(null);
       await clearCart();
-      refetch();
+        /* ✅ Apollo auto-sync cache → UI cập nhật tức thì */
       setIsConfirmClear(false);
     } catch (err) {
       setApiError('Lỗi khi xóa giỏ hàng: ' + err.message);
@@ -251,7 +245,7 @@ const CartPage = () => {
               🗑️ Xóa tất cả
             </Button>
           )}
-          <Button onClick={() => (window.location.href = '/products')}>
+          <Button onClick={() => (window.location.href = '/product')}>
             ← Tiếp tục mua
           </Button>
         </div>
@@ -268,7 +262,7 @@ const CartPage = () => {
             <div className="empty-text">Giỏ hàng của bạn trống</div>
             <a
               className="empty-link"
-              onClick={() => (window.location.href = '/products')}
+              onClick={() => (window.location.href = '/product')}
             >
               Quay lại mua hàng
             </a>
@@ -301,7 +295,7 @@ const CartPage = () => {
             count={selectedItems.length}
             totalItems={items.length}
             onCheckout={handleCheckout}
-            onContinueShopping={() => (window.location.href = '/products')}
+            onContinueShopping={() => (window.location.href = '/product')}
             shipping={0}
             discount={0}
           />
@@ -321,9 +315,6 @@ const CartPage = () => {
         <p>
           Bạn chắc chắn muốn xóa toàn bộ {items.length} sản phẩm trong giỏ
           hàng?
-        </p>
-        <p style={{ color: COLORS.textLight, fontSize: TYPOGRAPHY.fontSize.sm }}>
-          ⚠️ Hành động này không thể hoàn tác.
         </p>
       </Modal>
     </PageContainer>

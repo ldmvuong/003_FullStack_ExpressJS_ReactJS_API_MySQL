@@ -15,6 +15,7 @@ import {
 import { addRecentlyViewed } from '../util/recentlyViewed';
 import { AuthContext } from '../components/context/auth.context';
 import ProductCard from '../components/product/ProductCard';
+import { useCart } from '../hooks/useCart';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -23,6 +24,10 @@ const ProductDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { auth } = useContext(AuthContext);
+  const { addToCart } = useCart();
+  
+  // ✅ State cục bộ cho loading (không cần từ mutation nữa)
+  const [addCartLoading, setAddCartLoading] = useState(false);
   
   const [product, setProduct] = useState(null);
   const [similarProducts, setSimilarProducts] = useState([]);
@@ -119,6 +124,35 @@ const ProductDetailPage = () => {
 
   const handleProductClick = (productId) => {
     navigate(`/product/${productId}`);
+  };
+
+  const handleAddToCart = async () => {
+    if (!auth.isAuthenticated) {
+      notification.warning({ message: 'Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng' });
+      navigate('/login');
+      return;
+    }
+
+    try {
+      setAddCartLoading(true);
+      
+      // ✅ Gọi mutation từ useCart hook
+      // ✅ Apollo tự động cập nhật cache nhờ Fragment CartFields
+      // ❌ Không cần refetchQueries vì backend đã trả về Cart object
+      await addToCart({
+        variables: { 
+          productId: product.id, 
+          quantity: 1 
+        },
+      });
+      
+      notification.success({ message: 'Đã thêm vào giỏ hàng' });
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      notification.error({ message: 'Lỗi thêm sản phẩm vào giỏ hàng' });
+    } finally {
+      setAddCartLoading(false);
+    }
   };
 
   if (loading) {
@@ -221,8 +255,14 @@ const ProductDetailPage = () => {
                   {isFavorite ? 'Đã yêu thích' : 'Yêu thích'}
                 </Button>
                 
-                <Button type="primary" size="large" icon={<ShoppingCartOutlined />}>
-                  Mua ngay
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<ShoppingCartOutlined />}
+                  onClick={handleAddToCart}
+                  loading={addCartLoading}
+                >
+                  Thêm vào giỏ hàng
                 </Button>
               </Space>
             </Space>

@@ -5,12 +5,12 @@ const Fuse = require('fuse.js');
 
 const getProductListService = async (queryString, userId = null) => {
     try {
-        const { 
-            page, limit, 
-            keyword, 
+        const {
+            page, limit,
+            keyword,
             category, // FE gửi dạng: "Apple,Samsung"
             ram,      // FE gửi dạng: "8GB,12GB"
-            sort 
+            sort
         } = queryString;
 
         const _page = page ? parseInt(page) : 1;
@@ -31,10 +31,10 @@ const getProductListService = async (queryString, userId = null) => {
         if (ram) whereClause.ram = buildFilterIn(ram);
 
         // Lọc Category (Include model)
-        let includeClause = [{ 
-            model: Category, 
+        let includeClause = [{
+            model: Category,
             attributes: ['id', 'name'],
-            where: {} 
+            where: {}
         }];
 
         if (category) {
@@ -53,22 +53,31 @@ const getProductListService = async (queryString, userId = null) => {
             const allProducts = await Product.findAll({
                 where: whereClause,
                 include: includeClause,
-                raw: true, 
+                raw: true,
                 nest: true, // Để gom nhóm Category
                 order: [['createdAt', 'DESC']]
             });
 
             // A2. Cấu hình tìm kiếm mờ
             const fuseOptions = {
-                keys: ['name', 'Category.name'], // Tìm trong tên SP và tên Hãng
+                keys: [
+                    {
+                        name: 'name',
+                        weight: 0.7  // Tương đương name^3 
+                    },
+                    {
+                        name: 'Category.name',
+                        weight: 0.3  // Tương đương category.name^1
+                    }
+                ],
                 threshold: 0.4, // 0.0: Chính xác tuyệt đối, 0.4: Chấp nhận sai sót nhẹ
                 includeScore: true // Bao gồm điểm số (score) để sắp xếp kết quả
             };
             const fuse = new Fuse(allProducts, fuseOptions);
-            
+
             // A3. Thực hiện tìm kiếm
             const searchResults = fuse.search(keyword);
-            
+
             // Lấy ra mảng item gốc
             let items = searchResults.map(result => result.item);
 
@@ -86,11 +95,11 @@ const getProductListService = async (queryString, userId = null) => {
             const startIndex = (_page - 1) * _limit;
             finalProducts = items.slice(startIndex, startIndex + _limit);
 
-        } 
+        }
         // TRƯỜNG HỢP B: KHÔNG TỪ KHÓA -> Dùng SQL thuần (Tối ưu DB)
         else {
             const offset = (_page - 1) * _limit;
-            
+
             // Xây dựng Order cho SQL
             let orderClause = [['createdAt', 'DESC']]; // Mặc định: Mới nhất
             if (sort) {
@@ -183,7 +192,7 @@ const toggleFavoriteService = async ({ productId, userId }) => {
         if (!userId) throw new Error('Missing userId');
 
         const existing = await Favorite.findOne({ where: { UserId: userId, ProductId: productId } });
-        
+
         if (existing) {
             await existing.destroy();
             return { liked: false };
@@ -220,18 +229,18 @@ const getUserFavoritesService = async (userId) => {
             }],
             order: [['createdAt', 'DESC']]
         });
-        
+
         if (favoriteRecords.length === 0) {
             return [];
         }
-        
+
         // Extract products from favorite records
         const products = favoriteRecords
             .filter(fav => fav.Product) // Filter out null products
             .map(fav => fav.Product);
-        
+
         return products;
-        
+
     } catch (error) {
         console.error(error);
         return [];
@@ -241,10 +250,10 @@ const getUserFavoritesService = async (userId) => {
 const removeFavoriteService = async ({ productId, userId }) => {
     try {
         if (!userId) throw new Error('Missing userId');
-        
+
         const favorite = await Favorite.findOne({ where: { UserId: userId, ProductId: productId } });
         if (!favorite) throw new Error('Favorite not found');
-        
+
         await favorite.destroy();
         return { success: true };
     } catch (error) {
@@ -253,10 +262,10 @@ const removeFavoriteService = async ({ productId, userId }) => {
     }
 };
 
-module.exports = { 
-    getProductListService, 
-    getProductDetailService, 
-    toggleFavoriteService, 
+module.exports = {
+    getProductListService,
+    getProductDetailService,
+    toggleFavoriteService,
     createReviewService,
     getUserFavoritesService,
     removeFavoriteService

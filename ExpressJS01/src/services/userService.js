@@ -10,7 +10,6 @@ const createUserService = async (name, email, password) => {
         // 1. Check user exist
         const user = await User.findOne({ where: { email: email } });
         if (user) {
-            console.log(`>>> user exist, chọn 1 email khác: ${email}`);
             return null;
         }
 
@@ -33,7 +32,7 @@ const createUserService = async (name, email, password) => {
         return result;
 
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return null;
     }
 }
@@ -91,7 +90,7 @@ const loginService = async (email, password) => {
             }
         }
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return null;
     }
 }
@@ -105,7 +104,7 @@ const getUserService = async () => {
         });
         return result;
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return null;
     }
 }

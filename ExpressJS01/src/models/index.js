@@ -46,7 +46,7 @@ const initDatabase = async () => {
     try {
         // RESET lại DB để cập nhật cột mới (Chỉ dùng khi dev, cẩn thận mất dữ liệu)
         await sequelize.sync({ force: false, alter: true }); 
-        console.log(">>> Database & Tables Synced!");
+        console.info(">>> Database & Tables Synced!");
         
         await seedRoles();
         await seedCategoriesAndProducts(); // <--- Hàm seed mới xịn hơn
@@ -63,7 +63,7 @@ const seedRoles = async () => {
             { url: '/admin', description: 'Admin' },
             { url: '/user', description: 'User' }
         ]);
-        console.log(">>> Created default roles");
+        console.info(">>> Created default roles");
     }
 }
 
@@ -79,7 +79,7 @@ const seedCategoriesAndProducts = async () => {
             { name: 'Oppo', description: 'Camera phone' }
         ]);
 
-        console.log(">>> Created Categories: Apple, Samsung, Xiaomi, Oppo");
+        console.info(">>> Created Categories: Apple, Samsung, Xiaomi, Oppo");
 
         // 2. Mảng hình ảnh từ các nguồn khác nhau (không bị chặn)
         const phoneImages = {
@@ -176,7 +176,7 @@ const seedCategoriesAndProducts = async () => {
         });
         
         await Product.bulkCreate(products);
-        console.log(`>>> Created ${products.length} phones with real images!`);
+                console.info(`>>> Created ${products.length} phones with real images!`);
     }
 }
 

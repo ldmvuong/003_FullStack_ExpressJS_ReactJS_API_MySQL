@@ -344,7 +344,7 @@ const ProductCard = ({
                 Add to Cart
               </Button>
               
-              <Button
+              {/* <Button
                 block
                 style={{
                   height: 40,
@@ -361,7 +361,7 @@ const ProductCard = ({
                 }}
               >
                 Buy Now
-              </Button>
+              </Button> */}
             </div>
           )}
         </div>

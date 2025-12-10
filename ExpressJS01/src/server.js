@@ -29,9 +29,9 @@ const startServer = async () => {
     // 2. Kết nối Database
     try {
         await initDatabase();
-        console.log(">>> Connected to Database!");
+        console.info(">>> Connected to Database!");
     } catch (error) {
-        console.log(">>> Error connect to DB: ", error);
+        console.error(">>> Error connect to DB: ", error);
         return;
     }
 
@@ -91,8 +91,8 @@ const startServer = async () => {
 
     // 6. Start Server
     app.listen(port, () => {
-        console.log(`🚀 Server ready at http://localhost:${port}`);
-        console.log(`🛒 GraphQL ready at http://localhost:${port}${server.graphqlPath}`);
+        console.info(`🚀 Server ready at http://localhost:${port}`);
+        console.info(`🛒 GraphQL ready at http://localhost:${port}${server.graphqlPath}`);
     });
 };
 

@@ -11,7 +11,6 @@ const auth = (req, res, next) => {
       const token = req.headers.authorization.split(' ')[1];
       //verify token
       try {
-        console.log(">>> check token: ", token)
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.user = {
           email: decoded.email,
@@ -19,7 +18,6 @@ const auth = (req, res, next) => {
           role: decoded.role,
           createdBy: "hoidanit"
         }
-        console.log(">>> check token:", decoded)
         next();
       } catch (error) {
         return res.status(401).json({

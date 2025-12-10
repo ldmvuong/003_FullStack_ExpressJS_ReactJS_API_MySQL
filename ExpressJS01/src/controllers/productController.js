@@ -3,10 +3,6 @@ const { User } = require('../models/index');
 
 const getProducts = async (req, res) => {
   try {
-    console.log("=== getProducts Controller ===");
-    console.log("Query params:", req.query);
-    console.log("User from token:", req.user);
-
     // Try to get user id from token email if authenticated
     let userId = null;
     if (req.user && req.user.email) {
@@ -14,11 +10,7 @@ const getProducts = async (req, res) => {
       if (user) userId = user.id;
     }
 
-    console.log("Resolved userId:", userId);
-
     const data = await getProductListService(req.query, userId);
-    
-    console.log("Service returned:", data ? "Data received" : "NULL received");
 
     if (data === null) {
       return res.status(500).json({ message: "Error fetching products from service" });
@@ -45,7 +37,7 @@ const getProductDetail = async (req, res) => {
     if (!data) return res.status(404).json({ message: 'Product not found' });
     return res.status(200).json(data);
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return res.status(500).json({ message: 'Error fetching product detail' });
   }
 };
@@ -62,7 +54,7 @@ const toggleFavorite = async (req, res) => {
     const result = await toggleFavoriteService({ productId, userId: user.id });
     return res.status(200).json(result);
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return res.status(500).json({ message: 'Error toggling favorite' });
   }
 };
@@ -79,7 +71,7 @@ const createReview = async (req, res) => {
     const newReview = await createReviewService({ productId, userId: user.id, rating, comment });
     return res.status(200).json(newReview);
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return res.status(500).json({ message: 'Error creating review' });
   }
 };
@@ -93,7 +85,7 @@ const getUserFavorites = async (req, res) => {
     const favorites = await getUserFavoritesService(user.id);
     return res.status(200).json({ favorites: favorites || [] });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return res.status(500).json({ message: 'Error fetching favorites' });
   }
 };
@@ -110,7 +102,7 @@ const removeFavorite = async (req, res) => {
     const result = await removeFavoriteService({ productId, userId: user.id });
     return res.status(200).json(result);
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return res.status(500).json({ message: 'Error removing favorite' });
   }
 };

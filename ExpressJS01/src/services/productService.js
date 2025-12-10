@@ -1,120 +1,137 @@
 const { Product, Category } = require('../models/index');
 const { Favorite, Review, User } = require('../models/index');
 const { Op } = require('sequelize');
+const Fuse = require('fuse.js');
 
 const getProductListService = async (queryString, userId = null) => {
     try {
         const { 
             page, limit, 
             keyword, 
-            priceMin, priceMax, 
-            category, // VD: "Apple,Samsung" hoặc "Apple"
-            ram,      // VD: "8GB,12GB" hoặc "8GB"
-            rom, 
+            category, // FE gửi dạng: "Apple,Samsung"
+            ram,      // FE gửi dạng: "8GB,12GB"
             sort 
         } = queryString;
 
         const _page = page ? parseInt(page) : 1;
-        const _limit = limit ? parseInt(limit) : 10;
-        const offset = (_page - 1) * _limit;
+        const _limit = limit ? parseInt(limit) : 8;
 
-        const buildFilter = (param) => {
+        // Helper: Chuyển chuỗi "A,B" thành mảng cho SQL [Op.in]
+        const buildFilterIn = (param) => {
             if (!param) return undefined;
-            
-            // 1. Nếu là mảng (Frontend gửi dạng ?ram=8GB&ram=12GB)
-            if (Array.isArray(param)) return { [Op.in]: param };
-            
-            // 2. Nếu là chuỗi có dấu phẩy (Frontend gửi dạng ?ram=8GB,12GB)
+            if (Array.isArray(param)) return { [Op.in]: param }; // Đề phòng FE gửi mảng
             if (param.includes(',')) return { [Op.in]: param.split(',') };
-            
-            // 3. Nếu là chuỗi đơn (Frontend gửi dạng ?ram=8GB) -> QUAN TRỌNG: Bọc vào mảng
             return { [Op.in]: [param] };
-        }
+        };
 
-        // --- XÂY DỰNG BỘ LỌC (WHERE) ---
+        // --- 1. XÂY DỰNG BỘ LỌC CỨNG (Hãng, RAM) ---
         let whereClause = {};
 
-        // 1. Tìm theo tên
-        if (keyword) whereClause.name = { [Op.like]: `%${keyword}%` };
+        // Lọc RAM
+        if (ram) whereClause.ram = buildFilterIn(ram);
 
-        // 2. Lọc theo giá
-        if (priceMin || priceMax) {
-            whereClause.price = {};
-            if (priceMin) whereClause.price[Op.gte] = parseInt(priceMin);
-            if (priceMax) whereClause.price[Op.lte] = parseInt(priceMax);
-        }
-
-        // 3. Lọc theo Cấu hình (RAM, ROM)
-        if (ram) whereClause.ram = buildFilter(ram);
-        if (rom) whereClause.rom = buildFilter(rom);
-
-        // 4. Lọc theo Danh mục  
+        // Lọc Category (Include model)
         let includeClause = [{ 
             model: Category, 
             attributes: ['id', 'name'],
             where: {} 
         }];
-        
+
         if (category) {
-            includeClause[0].where.name = buildFilter(category);
-            
+            includeClause[0].where.name = buildFilterIn(category);
         } else {
-            // Xóa điều kiện where nếu không lọc category để tránh lỗi query
-            delete includeClause[0].where;
+            delete includeClause[0].where; // Bỏ where nếu không lọc category
         }
 
-        // --- SẮP XẾP ---
-        let orderClause = [['createdAt', 'DESC']];
-        if (sort) {
-            if (sort === 'price-asc') orderClause = [['price', 'ASC']];
-            if (sort === 'price-desc') orderClause = [['price', 'DESC']];
-            if (sort === 'sold-desc') orderClause = [['sold', 'DESC']];
+        // --- 2. XỬ LÝ LOGIC TÌM KIẾM ---
+        let finalProducts = [];
+        let totalCount = 0;
+
+        // TRƯỜNG HỢP A: CÓ TỪ KHÓA -> Dùng Fuse.js (Fuzzy Search)
+        if (keyword && keyword.trim() !== '') {
+            // A1. Lấy TOÀN BỘ sản phẩm thỏa mãn điều kiện RAM/Category (Bỏ limit DB)
+            const allProducts = await Product.findAll({
+                where: whereClause,
+                include: includeClause,
+                raw: true, 
+                nest: true, // Để gom nhóm Category
+                order: [['createdAt', 'DESC']]
+            });
+
+            // A2. Cấu hình tìm kiếm mờ
+            const fuseOptions = {
+                keys: ['name', 'Category.name'], // Tìm trong tên SP và tên Hãng
+                threshold: 0.4, // 0.0: Chính xác tuyệt đối, 0.4: Chấp nhận sai sót nhẹ
+                includeScore: true // Bao gồm điểm số (score) để sắp xếp kết quả
+            };
+            const fuse = new Fuse(allProducts, fuseOptions);
+            
+            // A3. Thực hiện tìm kiếm
+            const searchResults = fuse.search(keyword);
+            
+            // Lấy ra mảng item gốc
+            let items = searchResults.map(result => result.item);
+
+            // A4. Sắp xếp kết quả tìm kiếm (Sort thủ công bằng JS)
+            if (sort) {
+                if (sort === 'price-asc') items.sort((a, b) => a.price - b.price);
+                if (sort === 'price-desc') items.sort((a, b) => b.price - a.price);
+                if (sort === 'sold-desc') items.sort((a, b) => b.sold - a.sold);
+                // Mặc định Fuse đã sort theo độ giống (score) nên không cần sort createdAt
+            }
+
+            totalCount = items.length;
+
+            // A5. Phân trang thủ công (Cắt mảng)
+            const startIndex = (_page - 1) * _limit;
+            finalProducts = items.slice(startIndex, startIndex + _limit);
+
+        } 
+        // TRƯỜNG HỢP B: KHÔNG TỪ KHÓA -> Dùng SQL thuần (Tối ưu DB)
+        else {
+            const offset = (_page - 1) * _limit;
+            
+            // Xây dựng Order cho SQL
+            let orderClause = [['createdAt', 'DESC']]; // Mặc định: Mới nhất
+            if (sort) {
+                if (sort === 'price-asc') orderClause = [['price', 'ASC']];
+                if (sort === 'price-desc') orderClause = [['price', 'DESC']];
+                if (sort === 'sold-desc') orderClause = [['sold', 'DESC']];
+            }
+
+            const { count, rows } = await Product.findAndCountAll({
+                where: whereClause,
+                include: includeClause,
+                order: orderClause,
+                offset: offset,
+                limit: _limit,
+                // raw: true, nest: true // Có thể bật nếu muốn object thuần
+            });
+
+            totalCount = count;
+            // Chuyển đổi Sequelize object sang JSON thường để đồng nhất dữ liệu output
+            finalProducts = rows.map(r => r.toJSON ? r.toJSON() : r);
         }
 
-        // --- THỰC THI ---
-        console.log("Query conditions:", {
-            whereClause,
-            includeClause,
-            userId
-        });
+        // --- 3. GẮN THÊM CỜ isFavorite (Nếu cần) ---
+        // (Logic này giữ nguyên hoặc đơn giản hóa như bạn đang làm)
+        const products = finalProducts.map(product => ({
+            ...product,
+            isFavorite: false // Tạm thời false, xử lý logic user sau nếu cần
+        }));
 
-        const { count, rows } = await Product.findAndCountAll({
-            where: whereClause,
-            include: includeClause, // JOIN bảng Category
-            offset: offset,
-            limit: _limit,
-            order: orderClause
-        });
-
-        console.log("Query results:", { count, rowsLength: rows.length });
-
-        // Transform products to include isFavorite status
-        const products = rows.map(product => {
-            const productData = product.toJSON();
-            
-            // For now, set isFavorite to false for all products
-            // TODO: Re-implement favorite checking after fixing the association issue
-            productData.isFavorite = false;
-            
-            return productData;
-        });
-
-        const result = {
-            totalRows: count,
-            totalPages: Math.ceil(count / _limit),
+        return {
+            totalRows: totalCount,
+            totalPages: Math.ceil(totalCount / _limit),
             currentPage: _page,
             products: products
         };
-        
-        console.log("Service returning:", result);
-        return result;
+
     } catch (error) {
         console.error("ProductService Error:", error);
         return null;
     }
 }
-
-module.exports = { getProductListService };
 
 const getProductDetailService = async (productId, userId = null) => {
     try {
@@ -156,7 +173,7 @@ const getProductDetailService = async (productId, userId = null) => {
             sold: product.sold || 0
         };
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return null;
     }
 };
@@ -175,7 +192,7 @@ const toggleFavoriteService = async ({ productId, userId }) => {
             return { liked: true };
         }
     } catch (error) {
-        console.log(error);
+        console.error(error);
         throw error;
     }
 };
@@ -188,7 +205,7 @@ const createReviewService = async ({ productId, userId, rating, comment }) => {
         const newReview = await Review.create({ rating, comment, UserId: userId, ProductId: productId });
         return newReview;
     } catch (error) {
-        console.log(error);
+        console.error(error);
         throw error;
     }
 };
@@ -216,7 +233,7 @@ const getUserFavoritesService = async (userId) => {
         return products;
         
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return [];
     }
 };
@@ -231,7 +248,7 @@ const removeFavoriteService = async ({ productId, userId }) => {
         await favorite.destroy();
         return { success: true };
     } catch (error) {
-        console.log(error);
+        console.error(error);
         throw error;
     }
 };
